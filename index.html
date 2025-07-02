@@ -372,23 +372,25 @@
          * @param {string} pageId The ID of the page to show (e.g., 'awarenessPage').
          */
         function showPage(pageId) {
-            // Hide all pages
-            for (const id in pages) {
-                pages[id].classList.remove('active');
-                // Only update navigation button styles if the button exists in the navButtons object
-                const navButtonId = `nav${id.charAt(0).toUpperCase() + id.slice(1).replace('Page', '')}`;
-                if (navButtons[navButtonId]) {
-                    navButtons[navButtonId].classList.remove('btn-primary');
-                    navButtons[navButtonId].classList.add('btn-secondary');
-                }
+            // 1. Reset all navigation buttons to secondary state
+            for (const navId in navButtons) {
+                navButtons[navId].classList.remove('btn-primary');
+                navButtons[navId].classList.add('btn-secondary');
             }
 
-            // Show the requested page
+            // 2. Hide all content pages
+            for (const id in pages) {
+                pages[id].classList.remove('active');
+            }
+
+            // 3. Show the requested page
             const targetPage = pages[pageId];
             if (targetPage) {
                 targetPage.classList.add('active');
+
+                // 4. Set the target navigation button to primary state
                 const navButtonId = `nav${pageId.charAt(0).toUpperCase() + pageId.slice(1).replace('Page', '')}`;
-                if (navButtons[navButtonId]) { // Only update if the button exists
+                if (navButtons[navButtonId]) { // Ensure the button exists in navigation
                     navButtons[navButtonId].classList.remove('btn-secondary');
                     navButtons[navButtonId].classList.add('btn-primary');
                 }
