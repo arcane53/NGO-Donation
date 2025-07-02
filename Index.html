@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NGO Donation Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to right bottom, #e0f2f7, #c5e4f0); /* More vibrant gradient background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to start to allow scrolling */
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Stronger shadow */
+            width: 100%;
+            max-width: 850px; /* Slightly wider container */
+            overflow: hidden; /* Ensures content stays within rounded corners */
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.05); /* Subtle border */
+        }
+        .page {
+            display: none; /* Hidden by default */
+            padding: 2.5rem; /* Increased padding */
+            min-height: 500px; /* Ensure pages have some height */
+        }
+        .page.active {
+            display: block; /* Active page is shown */
+        }
+        .btn {
+            @apply px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ease-in-out transform hover:scale-105; /* More prominent buttons */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Stronger button shadow */
+        }
+        .btn-primary {
+            background: linear-gradient(to right, #3b82f6, #2563eb); /* Blue gradient */
+            @apply text-white hover:shadow-lg;
+        }
+        .btn-secondary {
+            background: linear-gradient(to right, #e5e7eb, #d1d5db); /* Light gray gradient */
+            @apply text-gray-800 hover:shadow-lg;
+        }
+        .form-input {
+            @apply w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200; /* More prominent focus ring */
+        }
+        textarea.form-input {
+            min-height: 150px; /* Taller textarea */
+            resize: vertical;
+        }
+
+        /* Style for the simulated message box */
+        #messageBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        #messageBox button {
+            margin-top: 1.5rem;
+            @apply bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200;
+        }
+
+        /* Keyframe for fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        /* Scroll Progress Bar */
+        #scrollProgressBar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 8px;
+            width: 0%;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6); /* Gradient for progress bar */
+            z-index: 10;
+            border-radius: 0 8px 8px 0;
+            transition: width 0.1s linear;
+        }
+
+        /* Donate Button Pulse Animation */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        /* Confetti Effect (simplified with CSS circles) */
+        .confetti-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f06; /* Pink */
+            border-radius: 50%;
+            opacity: 0;
+            animation: fall 3s forwards ease-out;
+        }
+        .confetti:nth-child(2n) { background-color: #6cf; /* Light Blue */ }
+        .confetti:nth-child(3n) { background-color: #ffc; /* Yellow */ }
+        .confetti:nth-child(4n) { background-color: #9f6; /* Green */ }
+
+        @keyframes fall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container relative">
+        <!-- Scroll Progress Bar -->
+        <div id="scrollProgressBar"></div>
+
+        <!-- Navigation Buttons -->
+        <nav class="p-5 bg-gray-50 border-b border-gray-200 flex justify-center space-x-6 rounded-t-2xl">
+            <button id="navAwareness" class="btn btn-primary">Awareness</button>
+            <button id="navVolunteer" class="btn btn-secondary">Volunteer Signup</button>
+            <!-- The Thank You button is intentionally removed from navigation -->
+        </nav>
+
+        <!-- Awareness Page -->
+        <div id="awarenessPage" class="page active overflow-y-auto" style="max-height: 70vh;">
+            <h1 class="text-5xl font-extrabold text-center text-gray-900 mb-8 leading-tight">Empowering Communities, One Step at a Time</h1>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Welcome to [Your NGO Name], where we believe in creating a lasting positive impact on the lives of those in need. Our mission is to foster sustainable development, provide essential resources, and empower individuals to build brighter futures. We focus on key areas such as education, healthcare, environmental conservation, and poverty alleviation.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Every child deserves access to quality education. We work tirelessly to build schools, provide learning materials, and support teachers in underserved regions. By investing in education, we are not just teaching subjects; we are opening doors to opportunities and breaking cycles of poverty. Our programs include scholarships, after-school tutoring, and vocational training for older students.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Access to healthcare is a fundamental human right. Our initiatives include setting up mobile clinics, providing medical supplies, and conducting health awareness campaigns. We focus on preventive care, maternal and child health, and addressing prevalent diseases in the communities we serve. Your support helps us save lives and improve well-being.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Protecting our planet is crucial for future generations. We engage in reforestation projects, promote sustainable farming practices, and educate communities on waste management and conservation. Our environmental programs aim to mitigate climate change impacts and preserve biodiversity. Join us in making a difference for our shared home.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Poverty alleviation is at the core of our work. We implement livelihood programs, provide micro-financing opportunities, and offer skill-building workshops to help individuals become self-sufficient. By empowering people economically, we enable them to lift themselves and their families out of hardship. Your contribution can provide a fresh start.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Your support, no matter how big or small, makes a tangible difference. Whether it's a monetary donation, volunteering your time, or simply spreading awareness, every action contributes to our collective goal. Together, we can build a world where everyone has the chance to thrive.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                We believe in transparency and accountability. All donations are meticulously tracked and utilized efficiently to maximize impact. We regularly publish reports on our projects and financial statements, ensuring that you know exactly how your generosity is transforming lives.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Join our community of changemakers today. Explore our website to learn more about our ongoing projects, read inspiring success stories, and find out how you can get involved. Follow us on social media to stay updated on our latest initiatives and campaigns.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Thank you for considering [Your NGO Name] as a partner in making a difference. Your compassion fuels our efforts, and together, we can create a brighter, more equitable world for all. We look forward to welcoming you to our family of supporters.
+            </p>
+            <div class="text-center mt-10">
+                <button id="donateNowBtn" class="btn btn-primary text-2xl pulse-animation">Donate Now</button>
+            </div>
+        </div>
+
+        <!-- Payment Gateway Page -->
+        <div id="paymentGatewayPage" class="page">
+            <h1 class="text-5xl font-extrabold text-center text-gray-900 mb-8 leading-tight">Secure Payment</h1>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Please enter your payment details to complete your donation. Your information is secure and encrypted.
+            </p>
+            <form id="paymentForm" class="space-y-6">
+                <div>
+                    <label for="cardNumber" class="block text-gray-800 text-lg font-bold mb-2">Card Number:</label>
+                    <input type="text" id="cardNumber" name="cardNumber" class="form-input" placeholder="XXXX XXXX XXXX XXXX" required pattern="[0-9]{16}" title="Please enter a 16-digit card number">
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label for="expiryDate" class="block text-gray-800 text-lg font-bold mb-2">Expiry Date (MM/YY):</label>
+                        <input type="text" id="expiryDate" name="expiryDate" class="form-input" placeholder="MM/YY" required pattern="(0[1-9]|1[0-2])\/?([0-9]{2})" title="Please enter a valid expiry date (MM/YY)">
+                    </div>
+                    <div>
+                        <label for="cvv" class="block text-gray-800 text-lg font-bold mb-2">CVV:</label>
+                        <input type="text" id="cvv" name="cvv" class="form-input" placeholder="XXX" required pattern="[0-9]{3,4}" title="Please enter a 3 or 4 digit CVV">
+                    </div>
+                </div>
+                <div>
+                    <label for="cardHolderName" class="block text-gray-800 text-lg font-bold mb-2">Cardholder Name:</label>
+                    <input type="text" id="cardHolderName" name="cardHolderName" class="form-input" required>
+                </div>
+                <div class="text-center mt-8">
+                    <button type="submit" id="completePaymentBtn" class="btn btn-primary text-xl">Complete Payment</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Volunteer Signup Page -->
+        <div id="volunteerPage" class="page">
+            <h1 class="text-5xl font-extrabold text-center text-gray-900 mb-8 leading-tight">Become a Volunteer</h1>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                Your time and skills can make a significant impact. Join our team of dedicated volunteers and help us achieve our mission. Please fill out the form below, and we'll get in touch with you.
+            </p>
+            <form id="volunteerForm" class="space-y-6">
+                <div>
+                    <label for="name" class="block text-gray-800 text-lg font-bold mb-2">Name:</label>
+                    <input type="text" id="name" name="name" class="form-input" required>
+                </div>
+                <div>
+                    <label for="email" class="block text-gray-800 text-lg font-bold mb-2">Email:</label>
+                    <input type="email" id="email" name="email" class="form-input" required>
+                </div>
+                <div>
+                    <label for="message" class="block text-gray-800 text-lg font-bold mb-2">Why do you want to volunteer?</label>
+                    <textarea id="message" name="message" class="form-input" rows="5"></textarea>
+                </div>
+                <div class="text-center mt-8">
+                    <button type="submit" class="btn btn-primary text-xl">Submit Application</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Donation Thank You Page -->
+        <div id="thankYouPage" class="page relative">
+            <div class="confetti-container" id="confettiContainer"></div>
+            <h1 class="text-5xl font-extrabold text-center text-gray-900 mb-8 leading-tight">Thank You for Your Generosity!</h1>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6 text-center">
+                Your donation makes a real difference in the lives of those we serve. We are incredibly grateful for your support.
+            </p>
+            <p class="text-700 text-lg leading-relaxed mb-6 text-center">
+                Every contribution helps us continue our vital work in education, healthcare, environmental conservation, and poverty alleviation.
+            </p>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6 text-center">
+                If you have any questions or would like to learn more about our impact, please don't hesitate to <a href="#" class="text-blue-600 hover:underline font-semibold" onclick="showMessage('Contact us at info@yourngo.org'); return false;">contact us</a>.
+            </p>
+            <div class="text-center mt-10">
+                <button onclick="showPage('awarenessPage')" class="btn btn-secondary text-xl">Back to Awareness</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulated Message Box -->
+    <div id="messageBox" class="rounded-lg">
+        <p id="messageBoxContent" class="text-gray-800 text-lg"></p>
+        <button onclick="hideMessageBox()">OK</button>
+    </div>
+
+    <script>
+        // --- Global Variables and Initialization ---
+        const pages = {
+            awarenessPage: document.getElementById('awarenessPage'),
+            paymentGatewayPage: document.getElementById('paymentGatewayPage'), // New payment gateway page
+            volunteerPage: document.getElementById('volunteerPage'),
+            thankYouPage: document.getElementById('thankYouPage')
+        };
+
+        const navButtons = {
+            navAwareness: document.getElementById('navAwareness'),
+            navVolunteer: document.getElementById('navVolunteer'),
+            // navThankYou is removed from the navigation bar
+        };
+
+        const donateNowBtn = document.getElementById('donateNowBtn');
+        const paymentForm = document.getElementById('paymentForm'); // New payment form
+        const volunteerForm = document.getElementById('volunteerForm');
+        const awarenessPageContent = document.getElementById('awarenessPage'); // The scrollable content
+        const messageBox = document.getElementById('messageBox');
+        const messageBoxContent = document.getElementById('messageBoxContent');
+        const scrollProgressBar = document.getElementById('scrollProgressBar');
+        const confettiContainer = document.getElementById('confettiContainer');
+
+        // Simple analytics store (in-memory for this demo)
+        const analytics = {
+            pageViews: {},
+            conversions: {
+                volunteerSignups: 0,
+                donationClicks: 0,
+                paymentInitiated: 0, // New analytic for payment initiation
+                paymentCompleted: 0  // New analytic for payment completion
+            },
+            scrollDepth: {}
+        };
+
+        let currentActivePage = 'awarenessPage'; // Track the currently active page for traffic monitoring
+
+        // --- Utility Functions ---
+
+        /**
+         * Shows a custom message box instead of alert().
+         * @param {string} message The message to display.
+         */
+        function showMessage(message) {
+            messageBoxContent.textContent = message;
+            messageBox.style.display = 'block';
+        }
+
+        /**
+         * Hides the custom message box.
+         */
+        function hideMessageBox() {
+            messageBox.style.display = 'none';
+        }
+
+        /**
+         * Simulates sending data to an analytics service.
+         * In a real application, this would be a fetch() call to a backend API.
+         * @param {string} eventType The type of event (e.g., 'page_view', 'conversion', 'scroll_depth').
+         * @param {object} data The data associated with the event.
+         */
+        function sendAnalyticsEvent(eventType, data) {
+            console.log(`Analytics Event: ${eventType}`, data);
+            // Example: fetch('/api/analytics', { method: 'POST', body: JSON.stringify({ eventType, data }) });
+        }
+
+        /**
+         * Debounces a function call.
+         * @param {function} func The function to debounce.
+         * @param {number} delay The delay in milliseconds.
+         * @returns {function} The debounced function.
+         */
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        /**
+         * Generates a simple confetti effect.
+         * @param {HTMLElement} container The container to append confetti to.
+         * @param {number} count The number of confetti pieces to generate.
+         */
+        function generateConfetti(container, count = 50) {
+            container.innerHTML = ''; // Clear previous confetti
+            for (let i = 0; i < count; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.animationDelay = `${Math.random() * 0.5}s`; // Stagger animation
+                confetti.style.transform = `scale(${0.5 + Math.random() * 0.5})`; // Random size
+                container.appendChild(confetti);
+            }
+        }
+
+        // --- Page Navigation and Traffic Monitoring ---
+
+        /**
+         * Displays the requested page and hides others.
+         * Tracks page views for traffic monitoring.
+         * @param {string} pageId The ID of the page to show (e.g., 'awarenessPage').
+         */
+        function showPage(pageId) {
+            // Hide all pages
+            for (const id in pages) {
+                pages[id].classList.remove('active');
+                // Only update navigation button styles if the button exists in the navButtons object
+                const navButtonId = `nav${id.charAt(0).toUpperCase() + id.slice(1).replace('Page', '')}`;
+                if (navButtons[navButtonId]) {
+                    navButtons[navButtonId].classList.remove('btn-primary');
+                    navButtons[navButtonId].classList.add('btn-secondary');
+                }
+            }
+
+            // Show the requested page
+            const targetPage = pages[pageId];
+            if (targetPage) {
+                targetPage.classList.add('active');
+                const navButtonId = `nav${pageId.charAt(0).toUpperCase() + pageId.slice(1).replace('Page', '')}`;
+                if (navButtons[navButtonId]) { // Only update if the button exists
+                    navButtons[navButtonId].classList.remove('btn-secondary');
+                    navButtons[navButtonId].classList.add('btn-primary');
+                }
+                currentActivePage = pageId; // Update active page for traffic monitoring
+
+                // Track page view
+                analytics.pageViews[pageId] = (analytics.pageViews[pageId] || 0) + 1;
+                sendAnalyticsEvent('page_view', { page: pageId, totalViews: analytics.pageViews[pageId] });
+
+                // Reset scroll position for the awareness page when navigating to it
+                if (pageId === 'awarenessPage') {
+                    awarenessPageContent.scrollTop = 0;
+                    scrollProgressBar.style.width = '0%'; // Reset progress bar
+                    scrollDepthsTracked.clear(); // Clear tracked depths for new session
+                } else {
+                    scrollProgressBar.style.width = '0%'; // Hide progress bar on other pages
+                }
+
+                // Trigger confetti on Thank You page
+                if (pageId === 'thankYouPage') {
+                    generateConfetti(confettiContainer);
+                } else {
+                    confettiContainer.innerHTML = ''; // Clear confetti if not on thank you page
+                }
+            } else {
+                console.error(`Page with ID '${pageId}' not found.`);
+            }
+        }
+
+        // --- Event Listeners and Tracking Logic ---
+
+        // Navigation button event listeners
+        navButtons.navAwareness.addEventListener('click', () => showPage('awarenessPage'));
+        navButtons.navVolunteer.addEventListener('click', () => showPage('volunteerPage'));
+        // navThankYou is removed, so no direct click listener for it
+
+        // Donation Click Tracking and redirect to Payment Gateway
+        donateNowBtn.addEventListener('click', () => {
+            analytics.conversions.donationClicks++;
+            sendAnalyticsEvent('conversion', { type: 'donation_click', totalClicks: analytics.conversions.donationClicks });
+            analytics.conversions.paymentInitiated++;
+            sendAnalyticsEvent('conversion', { type: 'payment_initiated', totalInitiations: analytics.conversions.paymentInitiated });
+            showPage('paymentGatewayPage'); // Redirect to the new payment gateway page
+        });
+
+        // Payment Form Submission (simulated payment gateway process)
+        paymentForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            // Basic form validation (for demo purposes)
+            const cardNumber = document.getElementById('cardNumber').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+            const cvv = document.getElementById('cvv').value;
+            const cardHolderName = document.getElementById('cardHolderName').value;
+
+            if (!cardNumber || !expiryDate || !cvv || !cardHolderName) {
+                showMessage('Please fill in all payment details.');
+                return;
+            }
+
+            // Simulate payment processing
+            showMessage('Processing your payment...');
+            setTimeout(() => {
+                hideMessageBox();
+                analytics.conversions.paymentCompleted++;
+                sendAnalyticsEvent('conversion', { type: 'payment_completed', totalCompletions: analytics.conversions.paymentCompleted });
+                paymentForm.reset(); // Clear the payment form
+                showPage('thankYouPage'); // Redirect to the thank you page after simulated payment
+            }, 2000); // Simulate 2 seconds for payment processing
+        });
+
+
+        // Volunteer Form Submission Tracking
+        volunteerForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent default form submission
+            analytics.conversions.volunteerSignups++;
+            sendAnalyticsEvent('conversion', { type: 'volunteer_signup', totalSignups: analytics.conversions.volunteerSignups });
+            showMessage('Thank you for signing up to volunteer! We will contact you soon.');
+            volunteerForm.reset(); // Clear the form
+            showPage('thankYouPage'); // Redirect to thank you page
+        });
+
+        // Scroll Tracking and Progress Bar for Awareness Page
+        let scrollDepthsTracked = new Set(); // To ensure each depth is tracked only once per session
+        const trackScrollAndProgressBar = debounce(() => {
+            const element = awarenessPageContent;
+            const scrollHeight = element.scrollHeight;
+            const clientHeight = element.clientHeight;
+            const scrollTop = element.scrollTop;
+
+            // Update progress bar
+            if (scrollHeight > clientHeight) {
+                const scrolled = scrollTop / (scrollHeight - clientHeight);
+                scrollProgressBar.style.width = `${scrolled * 100}%`;
+            } else {
+                scrollProgressBar.style.width = '100%'; // If content fits, show full bar
+            }
+
+
+            // Calculate scroll percentage for analytics
+            if (scrollHeight === clientHeight) { // Content fits without scrolling
+                return;
+            }
+            const scrollPercentage = (scrollTop / (scrollHeight - clientHeight)) * 100;
+
+            const depths = [25, 50, 75, 100];
+            depths.forEach(depth => {
+                if (scrollPercentage >= depth && !scrollDepthsTracked.has(depth)) {
+                    sendAnalyticsEvent('scroll_depth', { page: 'awarenessPage', depth: `${depth}%` });
+                    scrollDepthsTracked.add(depth);
+                }
+            });
+        }, 50); // Debounce to prevent too many events, faster for progress bar
+
+        awarenessPageContent.addEventListener('scroll', trackScrollAndProgressBar);
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('awarenessPage'); // Display the awareness page on load
+        });
+    </script>
+</body>
+</html>
